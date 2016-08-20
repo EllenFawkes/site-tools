@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -e
+set -u
+
+if [ "$#" -lt "1" ]; then
+	echo "Usage: $0 <sitename>"
+	exit 1
+fi
+
+SITENAME=$1
+CONF=/etc/apache2/sites-available/${SITENAME}.conf
+WWW_PATH=/var/www
+EDITOR=vim
+
+[ -r /etc/site-tools.conf ] && . /etc/site-tools.conf
+
+echo "Creating APACHE2 site '${SITENAME}' ..."
+
+if [ -d $WWW_PATH/$SITENAME ]; then
+	echo "Site '$SITENAME' already exists!"
+	exit 2
+fi
+
+mkdir -p $WWW_PATH/$SITENAME/www
+mkdir -p $WWW_PATH/$SITENAME/.logs
+
+echo "Place your public WWW files into ./www directory" > $WWW_PATH/$SITENAME/README 
+echo "<title>It works!</title> <h1>${SITENAME} works!</h1>" > $WWW_PATH/$SITENAME/www/index.html
+
+chown -R $USER:$USER $WWW_PATH/$SITENAME
+
+echo "Creating APACHE2 site configuration (virual host) ..."
+
+echo "<VirtualHost *:80>" > $CONF
+echo "    ServerAdmin admin@ellen.foxiehost.lan" >> $CONF
+echo "    ServerName ${SITENAME}" >> $CONF
+echo "    ServerAlias www.${SITENAME}" >> $CONF
+echo "    DocumentRoot /var/www/${SITENAME}/www" >> $CONF
+echo "    ErrorLog /var/www/${SITENAME}/.logs/error.log" >> $CONF
+echo "    CustomLog /var/www/${SITENAME}/.logs/access.log combined" >> $CONF
+echo "</VirtualHost>" >> $CONF
+
+a2ensite ${SITENAME}.conf
+
+echo "Reloading APACHE2 server ..."
+service apache2 reload
+
+echo "Site '${SITENAME}' is available on ${WWW_PATH}/${SITENAME}"
+ls -lah ${WWW_PATH}/${SITENAME}
+echo "DONE!!!"
+
+exit 0

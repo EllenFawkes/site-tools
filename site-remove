@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -e
+set -u
+
+if [ "$#" -lt "1" ]; then
+	echo "Usage: $0 <sitename>"
+	exit 1
+fi
+
+SITENAME=$1
+CONF=/etc/apache2/sites-available/${SITENAME}.conf
+WWW_PATH=/var/www
+EDITOR=vim
+
+[ -r /etc/site-tools.conf ] && . /etc/site-tools.conf
+
+echo "Removing APACHE2 site '${SITENAME}' ..."
+
+if [ ! -d $WWW_PATH/$SITENAME ]; then
+	echo "Site '$SITENAME' not found!"
+	exit 2
+fi
+
+a2dissite ${SITENAME}.conf
+
+rm -rf $CONF
+rm -rf $WWW_PATH/$SITENAME
+
+echo "Reloading APACHE2 server ..."
+service apache2 reload
+
+echo "DONE!!!"
+
+exit 0
